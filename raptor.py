@@ -2,11 +2,13 @@ import json
 import os
 import requests
 import re
+import sys
 from bs4 import BeautifulSoup
 
 session = requests.Session()
 user_db = '.data.sec'
 json_db = 'alx.json'
+intranet = 'https://intranet.alxswe.com'
 
 
 def check_or_create_user_data(user_db):
@@ -68,69 +70,36 @@ def sanitize_project_name(project_name):
     return sanitized_name.strip()
 
 
-def get_project_ids_to_alx_json(session):
-    # TODO: scrap the project infos
-
-    # ----------------- get projects ids and store it in json file ---------------
+def get_project_ids_to_alx_json(session, json_flag):
+    # Scrap the project infos
     response = session.get('https://intranet.alxswe.com/projects/current')
-    # Get the content of the response
-    content = response.content
-
-    # Write the content to a file
-    with open('alx.html', 'wb') as f:
-        f.write(content)
-
-    # Assume content is the HTML content you've fetched
-    soup = BeautifulSoup(content, 'html.parser')
+    soup = BeautifulSoup(response.content, 'html.parser')
 
     # Find all anchor tags with hrefs that start with "/projects/"
-    project_tags = soup.find_all(
-        'a', href=lambda href: href and href.startswith('/projects/'))
+    project_tags = soup.select('a[href^="/projects/"]')
 
-    # Extract the project IDs and names from the hrefs
-    project_info = {(tag['href'].split('/')[-1], tag.text)
+    # Extract the project IDs and names
+    project_info = {(tag['href'].split('/')[-1], sanitize_project_name(tag.text))
                     for tag in project_tags}
-    project_info = set()
-    for tag in project_tags:
-        project_id = tag['href'].split('/')[-1]
-        project_name = sanitize_project_name(tag.text)  # Modify the value here
-        project_info.add((project_id, project_name))
 
-    with open('alx.json', 'w') as file:
-        json.dump(dict(project_info), file, indent=2)
-# ----------------- get projects ids and store it in json file ---------------
+    # Write to JSON file only if flag is provided or file does not exist
+    if json_flag or not os.path.exists('alx.json'):
+        with open('alx.json', 'w') as file:
+            json.dump(dict(project_info), file, indent=2)
 
-
-def check_json_file(json_db):
-
-    # Check if file exists
-    if not os.path.exists(json_db):
-        return False
-
-    # Check if file has valid JSON data
-    try:
-        with open(json_db, 'r') as file:
-            data = json.load(file)
-            # Check if data is a dictionary (replace this with your own validation if needed)
-            if not isinstance(data, dict):
-                return False
-    except json.JSONDecodeError:
-        return False
-
-    return True
 
 # TODO:
 # def scrap_projects(login_response):
 #     if not login_response.ok:
-#       pass 
+#       pass
 
 
 def main():
-    email, password = check_or_create_user_data()
+    email, password = check_or_create_user_data(user_db)
     login_response = log_into_alx(email, password, session)
 
-    if not check_json_file(json_db):
-        get_project_ids_to_alx_json(session)
+    json_flag = '-j' in sys.argv  # Check if '-j' flag is present in command line arguments
+    get_project_ids_to_alx_json(session, json_flag)
 
 
 if __name__ == '__main__':
