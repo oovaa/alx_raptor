@@ -5,19 +5,20 @@ import re
 from bs4 import BeautifulSoup
 
 session = requests.Session()
+user_db = '.data.sec'
+json_db = 'alx.json'
 
 
-def check_or_create_user_data():
+def check_or_create_user_data(user_db):
 
-    file_path = 'data.sec'
     # Check if file exists
-    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+    if not os.path.exists(user_db) or os.path.getsize(user_db) == 0:
         # If not, prompt the user to enter their email and password
         email = input('Please enter your email: ')
         password = input('Please enter your password: ')
 
         # Store the email and password in the file
-        with open(file_path, 'w') as file:
+        with open(user_db, 'w') as file:
             file.write(email + '\n')
             file.write(password + '\n')
 
@@ -25,19 +26,17 @@ def check_or_create_user_data():
             '\033[91m' + 'user_data stored in data.sec. Do not share this file.' + '\033[0m')
 
     # If file exists, read the user_data
-    with open(file_path, 'r') as file:
+    with open(user_db, 'r') as file:
         email = file.readline().strip()
         password = file.readline().strip()
 
     return email, password
 
 
-def log_into_alx():
+def log_into_alx(email, password, session):
     # URL for login
     login_url = 'https://intranet.alxswe.com/auth/sign_in'
 
-    # Session to persist the login session
-    email, password = check_or_create_user_data()
     # Perform login
     login_data = {
         'user[email]': email,
@@ -69,7 +68,7 @@ def sanitize_project_name(project_name):
     return sanitized_name.strip()
 
 
-def get_project_ids_to_alx_json():
+def get_project_ids_to_alx_json(session):
     # TODO: scrap the project infos
 
     # ----------------- get projects ids and store it in json file ---------------
@@ -102,15 +101,15 @@ def get_project_ids_to_alx_json():
 # ----------------- get projects ids and store it in json file ---------------
 
 
-def check_json_file():
-    file_path = 'alx.json'
+def check_json_file(json_db):
+
     # Check if file exists
-    if not os.path.exists(file_path):
+    if not os.path.exists(json_db):
         return False
 
     # Check if file has valid JSON data
     try:
-        with open(file_path, 'r') as file:
+        with open(json_db, 'r') as file:
             data = json.load(file)
             # Check if data is a dictionary (replace this with your own validation if needed)
             if not isinstance(data, dict):
@@ -127,11 +126,11 @@ def check_json_file():
 
 
 def main():
+    email, password = check_or_create_user_data()
+    login_response = log_into_alx(email, password, session)
 
-    login_response = log_into_alx()
-
-    if not check_json_file():
-        get_project_ids_to_alx_json()
+    if not check_json_file(json_db):
+        get_project_ids_to_alx_json(session)
 
 
 if __name__ == '__main__':
