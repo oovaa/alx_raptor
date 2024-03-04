@@ -92,15 +92,15 @@ def get_project_ids_to_alx_json(session, json_flag):
     # Create dictionary from project_info
     return project_dict
 
-
 def enter_projects(project_details):
     for id, _ in project_details.items():
         visit_prj = intranet + '/projects/' + id
         response = session.get(visit_prj)
         soup = BeautifulSoup(response.content, 'html.parser')
-        concepts = parse_cons(soup)
-        resources = parse_res(soup)
-        extra_res = parse_extra_res(soup)
+
+        # Parse and update concepts, resources, and extra resources
+        concepts, resources, extra_res = parse_project_details(soup)
+
         if concepts:
             project_details[id]['concepts'] = concepts
         if resources:
@@ -108,61 +108,88 @@ def enter_projects(project_details):
         if extra_res:
             project_details[id]['extra_res'] = extra_res
 
+    # Dump the updated project_details into json_db file
     create_json_file(project_details)
 
-        # resources = parse_res(soup)
-        # additional_res = parse_extra_res(soup)
+
+def parse_project_details(soup):
+    concepts_section = soup.find('h3', class_='panel-title', string='Concepts')
+    resources_section = soup.find('h2', string='Resources')
+    extra_res_section = soup.find('h2', string='Additional Resources')
+
+    concepts = parse_section(concepts_section)
+    resources = parse_section(resources_section)
+    extra_res = parse_section(extra_res_section)
+
+    return concepts, resources, extra_res
+
+
+def parse_section(section):
+    items = {}
+    if section:
+        section_list = section.find_next('ul')
+        if section_list:
+            item_tags = section_list.find_all('li')
+            for item in item_tags:
+                a_tag = item.find('a')
+                if a_tag:
+                    item_name = a_tag.text.strip()
+                    item_link = intranet + a_tag['href']
+                    items[item_name] = item_link
+    return items
+
 
 
 def create_json_file(dict):
     with open(json_db, 'w') as file:
         json.dump(dict, file, indent=2)
 
-def parse_cons(soup):
-    concepts_section = soup.find('h3', class_='panel-title', string='Concepts')
-    concepts = {}
-    if concepts_section:
-        concepts_list = concepts_section.find_next('ul')
-        if concepts_list:
-            concept_items = concepts_list.find_all('li')
-            for item in concept_items:
-                a_tag = item.find('a')
-                if a_tag:
-                    cons_name = a_tag.text.strip()
-                    cons_link = intranet + a_tag['href']
-                    concepts[cons_name] = cons_link
-    return concepts
 
-def parse_res(soup):
-    resources_section = soup.find('h2', string='Resources')
-    resources = {}
-    if resources_section:
-        resources_list = resources_section.find_next('ul')
-        if resources_list:
-            resource_items = resources_list.find_all('li')
-            resources = {}
-            for item in resource_items:
-                a_tag = item.find('a')
-                if a_tag:
-                    res_name = a_tag.text.strip()
-                    res_link = intranet + a_tag['href']
-                    resources[res_name] = res_link
-    return resources
+# def parse_cons(soup):
+#     concepts_section = soup.find('h3', class_='panel-title', string='Concepts')
+#     concepts = {}
+#     if concepts_section:
+#         concepts_list = concepts_section.find_next('ul')
+#         if concepts_list:
+#             concept_items = concepts_list.find_all('li')
+#             for item in concept_items:
+#                 a_tag = item.find('a')
+#                 if a_tag:
+#                     cons_name = a_tag.text.strip()
+#                     cons_link = intranet + a_tag['href']
+#                     concepts[cons_name] = cons_link
+#     return concepts
 
-def parse_extra_res(soup):
-    resources_section = soup.find('h2', string='Additional Resources')
-    add_res = {}
-    if resources_section:
-        resources_list = resources_section.find_next('ul')
-        if resources_list:
-            resource_items = resources_list.find_all('li')
-            for item in resource_items:
-                a_tag = item.find('a')
-                if a_tag:
-                    res_name = a_tag.text.strip()
-                    res_link = intranet + a_tag['href']
-                    add_res[res_name] = res_link
-    return add_res
+# def parse_res(soup):
+#     resources_section = soup.find('h2', string='Resources')
+#     resources = {}
+#     if resources_section:
+#         resources_list = resources_section.find_next('ul')
+#         if resources_list:
+#             resource_items = resources_list.find_all('li')
+#             resources = {}
+#             for item in resource_items:
+#                 a_tag = item.find('a')
+#                 if a_tag:
+#                     res_name = a_tag.text.strip()
+#                     res_link = intranet + a_tag['href']
+#                     resources[res_name] = res_link
+#     return resources
+
+# def parse_extra_res(soup):
+#     resources_section = soup.find('h2', string='Additional Resources')
+#     add_res = {}
+#     if resources_section:
+#         resources_list = resources_section.find_next('ul')
+#         if resources_list:
+#             resource_items = resources_list.find_all('li')
+#             for item in resource_items:
+#                 a_tag = item.find('a')
+#                 if a_tag:
+#                     res_name = a_tag.text.strip()
+#                     res_link = intranet + a_tag['href']
+#                     add_res[res_name] = res_link
+#     return add_res
 
 
 # TODO:
