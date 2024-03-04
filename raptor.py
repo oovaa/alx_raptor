@@ -3,6 +3,7 @@ import os
 import requests
 import re
 import sys
+import getpass
 from bs4 import BeautifulSoup
 
 session = requests.Session()
@@ -17,7 +18,7 @@ def check_or_create_user_data(user_db):
     if not os.path.exists(user_db) or os.path.getsize(user_db) == 0:
         # If not, prompt the user to enter their email and password
         email = input('Please enter your email: ')
-        password = input('Please enter your password: ')
+        password = getpass.getpass(prompt='Please enter your password: ')
 
         # Store the email and password in the file
         with open(user_db, 'w') as file:
@@ -87,6 +88,8 @@ def get_project_ids_to_alx_json(session, json_flag):
         with open('alx.json', 'w') as file:
             json.dump(dict(project_info), file, indent=2)
 
+    return project_info
+
 
 # TODO:
 # def scrap_projects(login_response):
@@ -98,8 +101,9 @@ def main():
     email, password = check_or_create_user_data(user_db)
     login_response = log_into_alx(email, password, session)
 
-    json_flag = '-j' in sys.argv  # Check if '-j' flag is present in command line arguments
-    get_project_ids_to_alx_json(session, json_flag)
+    if login_response.ok:
+        json_flag = '-j' in sys.argv  # Check if '-j' flag is present in command line arguments
+        get_project_ids_to_alx_json(session, json_flag)
 
 
 if __name__ == '__main__':
