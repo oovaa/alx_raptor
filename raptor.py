@@ -3,7 +3,7 @@ import os
 import requests
 import re
 import sys
-import getpass
+from getpass import getpass
 from bs4 import BeautifulSoup
 import time
 session = requests.Session()
@@ -18,7 +18,7 @@ def check_or_create_user_data(user_db):
     if not os.path.exists(user_db) or os.path.getsize(user_db) == 0:
         # If not, prompt the user to enter their email and password
         email = input('Please enter your email: ')
-        password = getpass.getpass(prompt='Please enter your password: ')
+        password = getpass(prompt='Please enter your password: ')
 
         # Store the email and password in the file
         with open(user_db, 'w') as file:
@@ -208,9 +208,8 @@ def main():
         json_flag = '-j' in sys.argv
         project_details = get_project_ids_to_alx_json(session, json_flag)
         enter_projects(project_details)
-    end_time = time.time()
-    execution_time = end_time - start_time
-    print("Execution time:", execution_time, "seconds")
+    execution_time = time.time() - start_time
+    print(f"Execution time: {execution_time:2d} seconds")
 
 
 if __name__ == '__main__':
