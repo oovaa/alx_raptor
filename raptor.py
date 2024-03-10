@@ -1,4 +1,3 @@
-import mysql.connector
 import json
 import os
 import requests
@@ -84,13 +83,15 @@ def get_project_ids_to_alx_json(session, json_flag):
     project_info = {(tag['href'].split('/')[-1], sanitize_project_name(tag.text))
                     for tag in project_tags}
 
-    project_dict = {project[0]: {'name': project[1]} for project in project_info}
+    project_dict = {project[0]: {'name': project[1]}
+                    for project in project_info}
     # Write to JSON file only if flag is provided or file does not exist
     if json_flag or not os.path.exists(json_db):
         create_json_file(project_dict)
 
     # Create dictionary from project_info
     return project_dict
+
 
 def enter_projects(project_details):
     for id, _ in project_details.items():
@@ -137,7 +138,6 @@ def parse_section(section):
                     item_link = intranet + a_tag['href']
                     items[item_name] = item_link
     return items
-
 
 
 def create_json_file(dict):
@@ -204,12 +204,14 @@ def main():
     login_response = log_into_alx(email, password, session)
 
     if login_response.ok:
-        json_flag = '-j' in sys.argv  # Check if '-j' flag is present in command line arguments
+        # Check if '-j' flag is present in command line arguments
+        json_flag = '-j' in sys.argv
         project_details = get_project_ids_to_alx_json(session, json_flag)
         enter_projects(project_details)
     end_time = time.time()
     execution_time = end_time - start_time
     print("Execution time:", execution_time, "seconds")
+
 
 if __name__ == '__main__':
     main()
