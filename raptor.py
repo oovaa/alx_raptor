@@ -26,7 +26,9 @@ def check_or_create_user_data(user_db):
             file.write(password + '\n')
 
         print(
-            '\033[91m' + 'user_data stored in data.sec. Do not share this file.' + '\033[0m')
+            '\033[91m' +
+            'user_data stored in data.sec. Do not share this file.'
+            + '\033[0m')
 
     # If file exists, read the user_data
     with open(user_db, 'r') as file:
@@ -58,10 +60,13 @@ def log_into_alx(email, password, session):
     login_data['authenticity_token'] = csrf_token
 
     # Now you can send the POST request with the login data
-    login_response = session.post(login_url, data=login_data, allow_redirects=True, headers={
-        'Referer': 'https://intranet.alxswe.com/'})
+    login_response = session.post(login_url, data=login_data,
+                                  allow_redirects=True, headers={
+                                      'Referer':
+                                          'https://intranet.alxswe.com/'})
     return login_response
-    # Check if login was successful (you may need to customize this based on the website's response)
+    # Check if login was successful (you may need to customize this
+    # based on the website's response)
 
 
 # fix projects names and remove and wanted characters
@@ -80,7 +85,8 @@ def get_project_ids_to_alx_json(session, json_flag):
     project_tags = soup.select('a[href^="/projects/"]')
 
     # Extract the project IDs and names
-    project_info = {(tag['href'].split('/')[-1], sanitize_project_name(tag.text))
+    project_info = {(tag['href'].split('/')[-1],
+                     sanitize_project_name(tag.text))
                     for tag in project_tags}
 
     project_dict = {project[0]: {'name': project[1]}
@@ -93,14 +99,53 @@ def get_project_ids_to_alx_json(session, json_flag):
     return project_dict
 
 
+def get_qa_reviews(soup):
+    # Find all QA review buttons
+    qa_review_buttons = soup.find_all(
+        'button', class_='btn btn-default btn-sm', attrs={'data-target': True})
+
+    qa_reviews_html = ''
+
+    for button in qa_review_buttons:
+        # Check if the button is for a QA review
+        data_target = button['data-target']
+        if data_target.startswith('#task-qa-review-'):
+            # Find the corresponding modal
+            # Remove the '#' from the start of the ID
+            qa_review_modal = soup.find(id=data_target[1:])
+
+            # Add the HTML of the modal to the QA reviews HTML
+            qa_reviews_html += str(qa_review_modal)
+
+    # Return the HTML of the QA reviews
+    return qa_reviews_html
+
+
 def enter_projects(project_details):
-    for id, _ in project_details.items():
+    # Create directory if it doesn't exist
+    if not os.path.exists('./projects_html'):
+        os.makedirs('./projects_html')
+
+    for id, info in project_details.items():
         visit_prj = intranet + '/projects/' + id
         response = session.get(visit_prj)
+        # Save file in projects_html directory
+        htmlname = os.path.join('projects_html', info['name'] + ".html")
         soup = BeautifulSoup(response.content, 'html.parser')
 
+        with open(htmlname, 'w')as htmlcontent:
+            htmlcontent.write(response.text)
         # Parse and update concepts, resources, and extra resources
         concepts, resources, extra_res = parse_project_details(soup)
+
+        # Get QA reviews
+        qa_reviews_html = get_qa_reviews(soup)
+        if qa_reviews_html:
+            # Save QA reviews in a separate HTML file
+            qa_htmlname = os.path.join(
+                'projects_html', info['name'] + "QA.html")
+            with open(qa_htmlname, 'w') as qa_htmlcontent:
+                qa_htmlcontent.write(qa_reviews_html)
 
         if concepts:
             project_details[id]['concepts'] = concepts
@@ -142,11 +187,12 @@ def parse_section(section):
 
 def create_json_file(dict):
     with open(json_db, 'w') as file:
-        json.dump(dict, file, indent=2)
+        json.dump(dict, file, indent=3)
 
 
 # def parse_cons(soup):
-#     concepts_section = soup.find('h3', class_='panel-title', string='Concepts')
+#     concepts_section = soup.find('h3', class_='panel-title',
+#       string='Concepts')
 #     concepts = {}
 #     if concepts_section:
 #         concepts_list = concepts_section.find_next('ul')
@@ -204,12 +250,15 @@ def main():
     login_response = log_into_alx(email, password, session)
 
     if login_response.ok:
+        print("Login successful")
         # Check if '-j' flag is present in command line arguments
         json_flag = '-j' in sys.argv
+        print("Getting project details...")
         project_details = get_project_ids_to_alx_json(session, json_flag)
+        print("Entering projects...")
         enter_projects(project_details)
     execution_time = time.time() - start_time
-    print(f"Execution time: {execution_time:2d} seconds")
+    print(f"Execution time: {execution_time:.2f} seconds")
 
 
 if __name__ == '__main__':
