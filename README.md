@@ -16,6 +16,12 @@ This script logs into the ALX intranet, scrapes the current projects, and stores
 
 ## Usage
 
+first store your email and pass in a `.data.sec` file in the first two lines as this:
+```
+examle@gmail.com
+pass123
+```
+
 Run the script with Python 3:
 
 ```bash
